@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/css/output.css">
+</head>
+
+{% block content %}
+<section class="min-h-screen bg-white">
+  {% if flash %}
+    {% include 'component/AppToast.twig' with {
+      show: true,
+      message: flash.message,
+      type: flash.type|default('success')
+    } %}
+  {% endif %}
+
+  <header class="flex items-center justify-between px-6 py-4 border-b bg-cyan-50">
+    <div class="flex items-center gap-4">
+      <button
+        onclick="toggleSidebar()"
+        aria-label="Toggle sidebar"
+        class="p-2 rounded-md hover:bg-cyan-100"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6 text-cyan-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"
+          />
+        </svg>
+      </button>
+      <h2 class="text-xl font-semibold text-gray-800">
+        {{ activeView == 'create' ? 'Create Ticket' : 'Dashboard' }}
+      </h2>
+    </div>
+
+      <div class="flex items-center ">
+      <a href="#" onclick="showCreateView(); return false;" id="newTicketBtn" class="flex items-center gap-2 px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700">New Ticket</a>
+    </div>
+  </header>
+
+  <div class="flex">
+    <aside
+      id="sidebar"
+      class="w-64 transition-all duration-200 bg-cyan-700 text-cyan-50 h-[calc(100vh-64px)] overflow-auto"
+    >
+      <div class="p-4 flex flex-col h-full">
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center gap-2">
+            <span class="ml-1 text-lg font-bold">Ticket Management</span>
+          </div>
+          <button
+            onclick="toggleSidebar()"
+            class="md:hidden p-1 rounded hover:bg-cyan-600/30"
+          >
+            ✕
+          </button>
+        </div>
+
+        <nav class="flex-1">
+          <ul class="space-y-2 text-sm">
+            <li>
+              <a href="#" onclick="showDashboardView(); return false;" class="px-2 py-2 rounded cursor-pointer hover:bg-cyan-600/20 block" id="navViewTickets">View Tickets</a>
+            </li>
+            <li>
+              <a href="#" onclick="showCreateView(); return false;" class="px-2 py-2 rounded cursor-pointer hover:bg-cyan-600/20 block" id="navCreateTicket">Create Ticket</a>
+            </li>
+            
+            
+          </ul>
+        </nav>
+
+        <div class="mt-4 text-xs text-cyan-200">
+          <a href="#" onclick="logout(); return false;" class="w-full text-left px-2 py-2 rounded hover:bg-cyan-600/20 block">
+            Logout
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <main class="flex-1 p-6 bg-cyan-50 min-h-[calc(100vh-64px)]">
+      <div id="dashboardView">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
+            <div>
+              <h3 class="text-sm text-gray-500">Open Tickets</h3>
+              <p id="countOpen" class="text-2xl font-semibold text-gray-800">
+                {{ counts.open }}
+              </p>
+            </div>
+            <div class="bg-cyan-100 p-3 rounded-full text-cyan-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
+            <div>
+              <h3 class="text-sm text-gray-500">In Progress</h3>
+              <p id="countInProgress" class="text-2xl font-semibold text-gray-800">
+                {{ counts.inProgress }}
+              </p>
+            </div>
+            <div class="bg-orange-100 p-3 rounded-full text-orange-600">
+                <!-- Analytics / in-progress icon (three bars) -->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <rect x="4" y="10" width="3.5" height="10" rx="0.5" />
+                  <rect x="10.25" y="6" width="3.5" height="14" rx="0.5" />
+                  <rect x="16.5" y="2" width="3.5" height="18" rx="0.5" />
+                </svg>
+              </div>
+          </div>
+
+          <div class="p-4 bg-white rounded-lg shadow-sm flex items-center justify-between">
+            <div>
+              <h3 class="text-sm text-gray-500">Closed</h3>
+              <p id="countClosed" class="text-2xl font-semibold text-gray-800">
+                {{ counts.closed }}
+              </p>
+            </div>
+            <div class="bg-cyan-100 p-3 rounded-full text-cyan-600">
+                <!-- Closed icon: lock (filled style) -->
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-6 w-6"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M5 8V6a5 5 0 0110 0v2h1a1 1 0 011 1v7a2 2 0 01-2 2H5a2 2 0 01-2-2V9a1 1 0 011-1h1zm2-2a3 3 0 116 0v2H7V6z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+          </div>
+        </div>
+
+        <div class="w-full flex items-center mb-4">
+            <hr class="flex-1 border-cyan-200" />
+            <span class="mx-4 text-cyan-700 font-semibold text-lg">Tickets</span>
+            <hr class="flex-1 border-cyan-200" />
+          </div>
+        
+
+        <div id="ticketsGrid" class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 overflow-y-auto max-h-[48vh]">
+          {% for ticket in tickets %}
+            <article data-id="{{ ticket.id }}" data-status="{{ ticket.status }}" class="bg-white p-4 rounded-lg shadow-sm hover:shadow-lg transition">
+              <div class="flex items-start justify-between">
+                <div>
+                  <p class="text-xs text-gray-500">{{ ticket.id }}</p>
+                  <h3 class="mt-1 text-lg font-semibold text-gray-800">
+                    {{ ticket.title }}
+                  </h3>
+                </div>
+                <div class="ml-4 shrink-0">
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold
+                    {% if ticket.priority == 'High' %}
+                      bg-red-100 text-red-700
+                    {% elseif ticket.priority == 'Medium' %}
+                      bg-yellow-100 text-yellow-700
+                    {% else %}
+                      bg-green-100 text-green-700
+                    {% endif %}
+                  ">
+                    {{ ticket.priority }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="mt-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="h-8 w-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-semibold">
+                    {{ ticket.assignee ? ticket.assignee|first : '?' }}
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-600">Assignee</p>
+                    <p class="text-sm font-medium text-gray-800">
+                      {{ ticket.assignee }}
+                    </p>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <p class="text-sm text-gray-600">Status</p>
+                  <p class="inline-flex items-center px-2 py-1 rounded text-sm font-semibold
+                    {% if ticket.status == 'Open' %}
+                      bg-cyan-100 text-cyan-700
+                    {% elseif ticket.status == 'In Progress' %}
+                      bg-orange-100 text-orange-700
+                    {% else %}
+                      bg-gray-100 text-gray-700
+                    {% endif %}
+                  ">
+                    {{ ticket.status }}
+                  </p>
+                </div>
+              </div>
+
+              <div class="mt-4 flex items-center justify-end gap-3">
+                <a
+                  href="{{ "" }}"
+                  class="text-cyan-600 hover:underline"
+                >
+                  Edit
+                </a>
+                <form action="{{ "" }}" method="POST" class="inline"
+                      onsubmit="return confirm('Delete this ticket? This cannot be undone.');">
+                  <button type="submit" class="text-red-600">Delete</button>
+                </form>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div id="createView" class="hidden">
+        {% include 'pages/_AppAdd_fragment.twig' with { ticket: null, errors: errors|default({}) } %}
+      </div>
+      <!-- Toast container -->
+      <div id="toastContainer" class="fixed top-6 right-6 space-y-2 z-50"></div>
+
+      <!-- Delete confirmation modal -->
+      <div id="confirmModal" class="fixed inset-0 hidden items-center justify-center bg-black/40 z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+          <h3 class="text-lg font-semibold mb-2">Confirm action</h3>
+          <p id="confirmMessage" class="text-sm text-gray-700 mb-4">Are you sure you want to delete this ticket? This action cannot be undone.</p>
+          <div class="flex justify-end gap-3">
+            <button id="confirmCancel" class="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200">Cancel</button>
+            <button id="confirmOk" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Delete</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    {% include 'component/AppFooter.twig' %}
+  </footer>
+</section>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  sidebar.classList.toggle('w-64');
+  sidebar.classList.toggle('w-16');
+}
+
+function logout() {
+  // Clear authentication and mark session expired so dashboard stays protected
+  localStorage.removeItem('authUser');
+  try { localStorage.setItem('sessionExpired', String(Date.now())); } catch (e) {}
+  // show small toast then redirect to home so user sees feedback
+  try { showToast('Logged out', 'info', 1000); } catch (e) {}
+  setTimeout(() => { window.location.href = '/'; }, 900);
+}
+
+function isAuthenticated() {
+  try{
+    // if a sessionExpired flag is present, require fresh login
+    if (localStorage.getItem('sessionExpired')) return false;
+    return !!localStorage.getItem('authUser');
+  }catch(e){ return false; }
+}
+
+function showCreateView() {
+  document.getElementById('dashboardView').classList.add('hidden');
+  document.getElementById('createView').classList.remove('hidden');
+  const title = document.querySelector('header h2');
+  if (title) title.textContent = 'Create Ticket';
+}
+
+function showDashboardView() {
+  document.getElementById('createView').classList.add('hidden');
+  document.getElementById('dashboardView').classList.remove('hidden');
+  const title = document.querySelector('header h2');
+  if (title) title.textContent = 'Dashboard';
+}
+
+// Local storage helpers
+function getLocalTickets() {
+  const raw = localStorage.getItem('tickets');
+  try { return raw ? JSON.parse(raw) : []; } catch (e) { return []; }
+}
+
+function saveLocalTickets(tickets) {
+  localStorage.setItem('tickets', JSON.stringify(tickets));
+}
+
+function renderTicketCard(ticket) {
+  // Skip if this ticket is already rendered
+  if (document.querySelector(`[data-id="${ticket.id}"]`)) return;
+  const container = document.getElementById('ticketsGrid');
+  if (!container) return;
+
+  const article = document.createElement('article');
+  article.setAttribute('data-id', ticket.id);
+  article.setAttribute('data-status', ticket.status || 'Open');
+  article.className = 'bg-white p-4 rounded-lg shadow-sm hover:shadow-lg transition';
+  article.innerHTML = `
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-xs text-gray-500">${ticket.id}</p>
+        <h3 class="mt-1 text-lg font-semibold text-gray-800">${escapeHtml(ticket.title)}</h3>
+      </div>
+      <div class="ml-4 shrink-0">
+        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${priorityClasses(ticket.priority)}">
+          ${escapeHtml(ticket.priority)}
+        </span>
+      </div>
+    </div>
+    <div class="mt-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-8 w-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-semibold">${ticket.assignee ? ticket.assignee.charAt(0) : '?'}</div>
+        <div>
+          <p class="text-sm text-gray-600">Assignee</p>
+          <p class="text-sm font-medium text-gray-800">${escapeHtml(ticket.assignee)}</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <p class="text-sm text-gray-600">Status</p>
+        <p class="inline-flex items-center px-2 py-1 rounded text-sm font-semibold ${statusClasses(ticket.status)}">${escapeHtml(ticket.status)}</p>
+      </div>
+    </div>
+    <div class="mt-4 flex items-center justify-end gap-3">
+      <a href="#" class="text-cyan-600 hover:underline" onclick="editTicket('${ticket.id}'); return false;">Edit</a>
+      <form class="inline" onsubmit="return false;">
+        <button type="button" class="text-red-600" onclick="confirmDelete('${ticket.id}')">Delete</button>
+      </form>
+    </div>
+  `;
+
+  // prepend so newest appears first
+  container.prepend(article);
+  updateCounts();
+}
+
+function priorityClasses(priority) {
+  if (priority === 'High') return 'bg-red-100 text-red-700';
+  if (priority === 'Medium') return 'bg-yellow-100 text-yellow-700';
+  return 'bg-green-100 text-green-700';
+}
+
+function statusClasses(status) {
+  if (status === 'Open') return 'bg-cyan-100 text-cyan-700';
+  if (status === 'In Progress') return 'bg-orange-100 text-orange-700';
+  return 'bg-gray-100 text-gray-700';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, function (s) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[s];
+  });
+}
+
+function deleteTicket(id) {
+  let tickets = getLocalTickets();
+  tickets = tickets.filter(t => String(t.id) !== String(id));
+  saveLocalTickets(tickets);
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (el) el.remove();
+  updateCounts();
+}
+
+// Show a toast notification
+function showToast(message, type = 'success', timeout = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const colors = {
+    success: 'bg-green-500',
+    error: 'bg-red-500',
+    info: 'bg-cyan-500'
+  };
+  const toast = document.createElement('div');
+  toast.className = `${colors[type] || colors.info} text-white px-4 py-2 rounded shadow-md`;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('opacity-0');
+    setTimeout(() => toast.remove(), 300);
+  }, timeout);
+}
+
+// Modal-based delete confirmation
+let pendingDeleteId = null;
+function confirmDelete(id) {
+  pendingDeleteId = id;
+  const modal = document.getElementById('confirmModal');
+  const msg = document.getElementById('confirmMessage');
+  if (msg) msg.textContent = 'Are you sure you want to delete this ticket? This action cannot be undone.';
+  if (modal) modal.classList.remove('hidden');
+}
+
+function hideConfirmModal() {
+  const modal = document.getElementById('confirmModal');
+  if (modal) modal.classList.add('hidden');
+  pendingDeleteId = null;
+}
+
+function performDelete() {
+  if (!pendingDeleteId) return;
+  deleteTicket(pendingDeleteId);
+  showToast('Ticket deleted', 'info');
+  hideConfirmModal();
+}
+
+// Edit ticket: populate the create form and switch to create view
+function editTicket(id) {
+  const tickets = getLocalTickets();
+  const ticket = tickets.find(t => String(t.id) === String(id));
+  if (!ticket) return;
+  const form = document.getElementById('ticketFormFragment');
+  if (!form) return;
+  // populate fields
+  if (form.querySelector('[name="id"]')) form.querySelector('[name="id"]').value = ticket.id;
+  form.title.value = ticket.title || '';
+  form.description.value = ticket.description || '';
+  form.assignee.value = ticket.assignee || '';
+  form.priority.value = ticket.priority || 'Medium';
+  // change button label to Update
+  const btn = document.getElementById('submitButtonFragment');
+  if (btn) btn.textContent = 'Update';
+  showCreateView();
+}
+
+function updateCounts() {
+  const articles = document.querySelectorAll('#ticketsGrid article');
+  let open = 0, inProgress = 0, closed = 0;
+  articles.forEach(a => {
+    const s = (a.getAttribute('data-status') || '').toLowerCase();
+    if (s === 'open') open += 1;
+    else if (s === 'in progress' || s === 'inprogress' || s === 'in_progress') inProgress += 1;
+    else if (s === 'closed') closed += 1;
+  });
+  const elOpen = document.getElementById('countOpen'); if (elOpen) elOpen.textContent = open;
+  const elProg = document.getElementById('countInProgress'); if (elProg) elProg.textContent = inProgress;
+  const elClosed = document.getElementById('countClosed'); if (elClosed) elClosed.textContent = closed;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Protect route: redirect to signin if not authenticated
+  if (!isAuthenticated()) {
+    window.location.href = '/signin';
+    return;
+  }
+
+  // Check for authUser in localStorage
+  if (!localStorage.getItem('authUser')) {
+      // Redirect to signin if not authenticated
+      window.location.href = '/signin';
+  }
+
+  // Load any tickets saved in localStorage and render them (skip duplicates)
+  const localTickets = getLocalTickets();
+  localTickets.forEach(t => renderTicketCard(t));
+
+  // If no tickets exist in localStorage and no server-rendered tickets, add sample tickets
+  const existingDomCount = document.querySelectorAll('#ticketsGrid article').length;
+  if (localTickets.length === 0 && existingDomCount === 0) {
+    const sample = [
+      { id: 'sample-1', title: 'Sample: Cannot login', description: 'User reports unable to login to account', assignee: 'Alice', priority: 'High', status: 'Open' },
+      { id: 'sample-2', title: 'Sample: UI glitch on dashboard', description: 'Minor visual bug on cards', assignee: 'Bob', priority: 'Medium', status: 'In Progress' },
+      { id: 'sample-3', title: 'Sample: Export failing', description: 'CSV export times out', assignee: 'Charlie', priority: 'Low', status: 'Closed' }
+    ];
+    saveLocalTickets(sample);
+    sample.forEach(t => renderTicketCard(t));
+    showToast('Loaded sample tickets', 'info');
+  }
+
+  // Ensure analytics reflect current DOM
+  updateCounts();
+
+  // Handle create form submission with client-side validation
+  const form = document.getElementById('ticketFormFragment');
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      // clear previous client-side errors
+      ['title','description','assignee'].forEach(id => {
+        const el = document.getElementById('error-'+id);
+        if (el) { el.textContent = ''; el.classList.add('hidden'); }
+      });
+
+      const title = (form.title.value || '').trim();
+      const description = (form.description.value || '').trim();
+      const assignee = (form.assignee.value || '').trim();
+      const priority = form.priority.value || 'Medium';
+
+      let valid = true;
+      if (!title) {
+        const e = document.getElementById('error-title'); if (e) { e.textContent = 'Title is required.'; e.classList.remove('hidden'); }
+        valid = false;
+      }
+      if (!description) {
+        const e = document.getElementById('error-description'); if (e) { e.textContent = 'Description is required.'; e.classList.remove('hidden'); }
+        valid = false;
+      }
+      if (!assignee) {
+        const e = document.getElementById('error-assignee'); if (e) { e.textContent = 'Assignee is required.'; e.classList.remove('hidden'); }
+        valid = false;
+      }
+
+      if (!valid) return;
+
+      const submitBtn = document.getElementById('submitButtonFragment');
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = (submitBtn.textContent.indexOf('Update') !== -1) ? 'Updating...' : 'Creating...'; }
+
+      const tickets = getLocalTickets();
+      const existingId = form.querySelector('[name="id"]') ? form.querySelector('[name="id"]').value : '';
+      if (existingId) {
+        // update flow
+        const idx = tickets.findIndex(t => String(t.id) === String(existingId));
+        if (idx !== -1) {
+          tickets[idx].title = title;
+          tickets[idx].description = description;
+          tickets[idx].assignee = assignee;
+          tickets[idx].priority = priority;
+          saveLocalTickets(tickets);
+          // update DOM card
+          const el = document.querySelector(`[data-id="${existingId}"]`);
+          if (el) el.remove();
+          renderTicketCard(tickets[idx]);
+          showToast('Ticket updated', 'success');
+        }
+        // reset id and button
+        if (form.querySelector('[name="id"]')) form.querySelector('[name="id"]').value = '';
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Create'; }
+        form.reset();
+        showDashboardView();
+      } else {
+        // create flow
+        const newTicket = {
+          id: Date.now().toString(),
+          title,
+          description,
+          assignee,
+          priority,
+          status: 'Open'
+        };
+
+        tickets.unshift(newTicket);
+        saveLocalTickets(tickets);
+
+        // render into DOM
+        renderTicketCard(newTicket);
+
+        // reset form and go back to dashboard
+        form.reset();
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Create'; }
+        showToast('Ticket created', 'success');
+        showDashboardView();
+      }
+    });
+  }
+
+  // Cancel link in the fragment should toggle back to dashboard
+  const cancelLink = document.getElementById('cancelCreate');
+  if (cancelLink) {
+    cancelLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      showDashboardView();
+    });
+  }
+
+  // Wire confirm modal buttons
+  const confirmCancel = document.getElementById('confirmCancel');
+  const confirmOk = document.getElementById('confirmOk');
+  if (confirmCancel) confirmCancel.addEventListener('click', hideConfirmModal);
+  if (confirmOk) confirmOk.addEventListener('click', performDelete);
+
+  {% if flash %}
+  setTimeout(() => {
+    const toast = document.querySelector('.toast');
+    if (toast) toast.remove();
+  }, 3000);
+  {% endif %}
+});
+</script>
+{% endblock %}
+
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/css/output.css">
+</head>
+
+ {% include 'component/AppNavbar.twig' %}   
+    {% block content %}
+    <section class="min-h-screen bg-gradient-to-b from-cyan-50/50 to-white flex items-center">
+      <div class="container mx-auto px-4 py-12 md:py-20">
+        <div class="text-center max-w-2xl mx-auto mb-12">
+          <h1 class="text-4xl md:text-5xl font-bold mb-6 text-gray-800">Join us Today!</h1>
+          <p class="text-lg md:text-xl text-gray-600">Sign up now to streamline your ticket management process and enhance your productivity.</p>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-12 items-center max-w-6xl mx-auto">
+          <figure class="w-full lg:w-1/2 rounded-2xl overflow-hidden shadow-xl">
+            <img src="/images/signup.jpg" alt="Sign up illustration" class="w-full h-full object-cover" />
+          </figure>
+
+          <form id="signupForm" action="{{ "" }}" method="POST" class="bg-white p-8 md:p-10 rounded-xl shadow-lg flex-1 w-full max-w-xl">
+            <fieldset class="grid md:grid-cols-2 gap-6">
+              <div>
+                <label for="firstName" class="block text-gray-700 font-semibold mb-2">First Name</label>
+                <div class="relative">
+                  <input type="text" id="firstName" name="firstName" value="{{ old.firstName|default('') }}" class="w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 {{ errors.firstName ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-300 focus:border-cyan-500 focus:ring-cyan-200' }}" placeholder="John" required />
+                  {% if errors.firstName %}
+                    <span class="text-red-600 text-sm mt-1 block">{{ errors.firstName }}</span>
+                  {% endif %}
+                  <p id="error-firstName" class="text-red-600 text-sm mt-1 hidden"></p>
+                </div>
+              </div>
+              <div>
+                <label for="lastName" class="block text-gray-700 font-semibold mb-2">Last Name</label>
+                <div class="relative">
+                  <input type="text" id="lastName" name="lastName" value="{{ old.lastName|default('') }}" class="w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 {{ errors.lastName ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-300 focus:border-cyan-500 focus:ring-cyan-200' }}" placeholder="Doe" required />
+                  {% if errors.lastName %}
+                    <span class="text-red-600 text-sm mt-1 block">{{ errors.lastName }}</span>
+                  {% endif %}
+                  <p id="error-lastName" class="text-red-600 text-sm mt-1 hidden"></p>
+                </div>
+              </div>
+            </fieldset>
+
+            <div class="my-6">
+              <label for="email" class="block text-gray-700 font-semibold mb-2">Email Address</label>
+              <div class="relative">
+                <input type="email" id="email" name="email" value="{{ old.email|default('') }}" class="w-full px-4 py-3 border rounded-lg transition-all duration-200 bg-gray-50 {{ errors.email ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-300 focus:border-cyan-500 focus:ring-cyan-200' }}" placeholder="john@example.com" required />
+                {% if errors.email %}
+                  <span class="text-red-600 text-sm mt-1 block">{{ errors.email }}</span>
+                {% endif %}
+                <p id="error-email" class="text-red-600 text-sm mt-1 hidden"></p>
+              </div>
+            </div>
+
+            <div class="mb-8">
+              <label for="password" class="block text-gray-700 font-semibold mb-2">Password</label>
+              <div class="relative">
+                <input type="password" id="password" name="password" class="w-full px-4 py-3 pr-12 border rounded-lg transition-all duration-200 bg-gray-50 {{ errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-300 focus:border-cyan-500 focus:ring-cyan-200' }}" placeholder="••••••••" required />
+                {% if errors.password %}
+                  <span class="text-red-600 text-sm mt-1 block">{{ errors.password }}</span>
+                {% endif %}
+                <p id="error-password" class="text-red-600 text-sm mt-1 hidden"></p>
+              </div>
+            </div>
+
+            <button id="signupSubmit" type="submit" class="w-full bg-cyan-600 text-white py-3 rounded-lg font-semibold hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 transition-all duration-300 relative">Create Account</button>
+
+            <p class="mt-6 text-sm text-gray-600 text-center">
+              Already have an account?
+              <a href="/signin" class="text-cyan-600 hover:text-cyan-700 font-medium">Log in</a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
+    {% endblock %}
+    {% include 'component/AppFooter.twig' %}
+
+<script>
+(function(){
+  function $(id){return document.getElementById(id);} 
+  function showError(id,msg){const el=$(id); if(el){el.textContent=msg; el.classList.remove('hidden');}}
+  function clearError(id){const el=$(id); if(el){el.textContent=''; el.classList.add('hidden');}}
+
+  const form = $('signupForm');
+  if (!form) return;
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    ['firstName','lastName','email','password'].forEach(i=>clearError('error-'+i));
+
+    const firstName = (form.firstName.value||'').trim();
+    const lastName = (form.lastName.value||'').trim();
+    const email = (form.email.value||'').trim().toLowerCase();
+    const password = (form.password.value||'').trim();
+
+    let ok = true;
+    if(!firstName){ showError('error-firstName','First name is required'); ok=false; }
+    if(!lastName){ showError('error-lastName','Last name is required'); ok=false; }
+    if(!email){ showError('error-email','Email is required'); ok=false; }
+    else {
+      const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+      if(!re.test(email)){ showError('error-email','Invalid email address'); ok=false; }
+    }
+    if(!password || password.length < 6){ showError('error-password','Password must be at least 6 characters'); ok=false; }
+
+    if(!ok) return;
+
+    // load users
+    let users = [];
+    try{ users = JSON.parse(localStorage.getItem('users'))||[]; }catch(e){ users = []; }
+    if(users.find(u=>u.email===email)){
+      showError('error-email','An account with this email already exists');
+      return;
+    }
+
+    const user = { id: Date.now().toString(), firstName, lastName, email, password };
+    users.push(user);
+    localStorage.setItem('users', JSON.stringify(users));
+
+    // redirect to signin
+    window.location.href = '/signin';
+  });
+})();
+</script>
+
+</body>
+</html>
